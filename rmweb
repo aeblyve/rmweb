@@ -1,0 +1,100 @@
+#!/usr/bin/env python
+import argparse
+import sys
+import pycurl
+import json
+from io import BytesIO
+
+REMARKABLE_ADDRESS = "10.11.99.1"
+REMARKABLE_HEADER = [f'Origin: http://{REMARKABLE_ADDRESS}', 'Accept: */*', f'Referer: http://{REMARKABLE_ADDRESS}/',
+          'Connection: keep-alive']
+
+def get_filesystem_json():
+    return expand_json(documents_request())
+
+# Make a request for documents.
+# subdir is relative path from root.
+def documents_request(subdir=''):
+    data = BytesIO()
+    c = pycurl.Curl()
+    c.setopt(c.HTTPHEADER, REMARKABLE_HEADER)
+    c.setopt(c.URL, f'http://{REMARKABLE_ADDRESS}/documents/{subdir}')
+    c.setopt(c.POST, 1)
+    c.setopt(c.WRITEFUNCTION, data.write)
+    c.perform()
+    c.close()
+    return json.loads(data.getvalue())
+
+# recur over json and insert content of dirs as needed
+def expand_json(json):
+    for item in json:
+        if item['Type'] == 'CollectionType': # misspelling theirs, not mine
+            item['Contents'] = documents_request(item['ID'])
+            expand_json(item['Contents'])
+    return json
+
+def item_by_title(title, items=get_filesystem_json()):
+    for item in items:
+        if item['Type'] == 'CollectionType':
+            subsearch = item_by_title(title, item['Contents'])
+            if subsearch != None:
+                return subsearch
+        elif title in item['VissibleName']:
+            return item['ID'], item['VissibleName']
+    return None
+
+def download_file(search_title):
+    uuid, name = item_by_title(search_title)
+    if uuid == None:
+        sys.exit('Could not find suitable file.')
+    c = pycurl.Curl()
+    c.setopt(c.HTTPHEADER, REMARKABLE_HEADER)
+    c.setopt(c.URL, f'http://{REMARKABLE_ADDRESS}/download/{uuid}/placeholder')
+    file = open(f'{name}.pdf', 'wb')
+    c.setopt(c.WRITEDATA, file)
+    c.perform()
+    c.close()
+    file.close()
+
+def upload_file(file_path):
+    c = pycurl.Curl()
+    c.setopt(c.HTTPHEADER, REMARKABLE_HEADER)
+    c.setopt(c.URL, f'http://{REMARKABLE_ADDRESS}/upload')
+    c.setopt(c.HTTPPOST, [
+        ('file', (
+            c.FORM_FILE, file_path,
+            c.FORM_FILENAME, file_path,
+            c.FORM_CONTENTTYPE, 'application/pdf',
+            )),
+        ])
+    c.perform()
+    c.close()
+
+# print contents to stdout
+# by default, start at root with no indent level
+def print_contents(json=get_filesystem_json(), indent_level=0):
+    for item in json:
+        item_output = (indent_level * '    ') + item['VissibleName']
+        if item['Type'] == 'CollectionType':
+            print(item_output+':')
+            print_contents(item['Contents'], indent_level+1)
+        else:
+            print(item_output)
+
+
+#ARG SETUP
+parser = argparse.ArgumentParser()
+
+group = parser.add_mutually_exclusive_group()
+group.add_argument("-up", help="upload a file.", type=str)
+group.add_argument("-down", help="download the first file that matches the search query.", type=str)
+group.add_argument("-print", help="print the filesystem.", action="store_true")
+
+args = parser.parse_args()
+
+if args.up:
+    upload_file(args.up)
+elif args.down:
+    download_file(args.down)
+elif args.print:
+    print_contents()
