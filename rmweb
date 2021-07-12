@@ -90,6 +90,10 @@ group.add_argument("-up", help="upload a file.", type=str)
 group.add_argument("-down", help="download the first file that matches the search query.", type=str)
 group.add_argument("-print", help="print the filesystem.", action="store_true")
 
+if len(sys.argv)==1:
+    parser.print_help(sys.stderr)
+    sys.exit(1)
+
 args = parser.parse_args()
 
 if args.up:
