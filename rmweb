@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-import argparse
+import argparse 
 import sys
 import pycurl
 import json
 from io import BytesIO
+import os
 
 REMARKABLE_ADDRESS = "10.11.99.1"
 REMARKABLE_HEADER = [f'Origin: http://{REMARKABLE_ADDRESS}', 'Accept: */*', f'Referer: http://{REMARKABLE_ADDRESS}/',
@@ -25,6 +26,7 @@ def documents_request(subdir=''):
     c.close()
     return json.loads(data.getvalue())
 
+
 # recur over json and insert content of dirs as needed
 def expand_json(json):
     for item in json:
@@ -43,10 +45,14 @@ def item_by_title(title, items=get_filesystem_json()):
             return item['ID'], item['VissibleName']
     return None
 
-def download_file(search_title):
+def download_title(search_title):
     uuid, name = item_by_title(search_title)
     if uuid == None:
         sys.exit('Could not find suitable file.')
+    download_id(uuid, name)
+
+# For when the uuid is already known.
+def download_id(uuid, name):
     c = pycurl.Curl()
     c.setopt(c.HTTPHEADER, REMARKABLE_HEADER)
     c.setopt(c.URL, f'http://{REMARKABLE_ADDRESS}/download/{uuid}/placeholder')
@@ -81,6 +87,18 @@ def print_contents(json=get_filesystem_json(), indent_level=0):
         else:
             print(item_output)
 
+def dump_contents(json=get_filesystem_json()):
+    for item in json:
+        if item['Type'] == 'CollectionType':
+            current = os.getcwd()
+            os.mkdir(item['VissibleName'])
+            os.chdir(item['VissibleName'])
+            dump_contents(item['Contents'])
+            os.chdir(current)
+        else:
+            download_id(item['ID'], item['VissibleName'])
+
+
 
 #ARG SETUP
 parser = argparse.ArgumentParser()
@@ -89,6 +107,7 @@ group = parser.add_mutually_exclusive_group()
 group.add_argument("-up", help="upload a file.", type=str)
 group.add_argument("-down", help="download the first file that matches the search query.", type=str)
 group.add_argument("-print", help="print the filesystem.", action="store_true")
+group.add_argument("-dump", help="dump the filesystem to disk.", action="store_true")
 
 if len(sys.argv)==1:
     parser.print_help(sys.stderr)
@@ -99,6 +118,8 @@ args = parser.parse_args()
 if args.up:
     upload_file(args.up)
 elif args.down:
-    download_file(args.down)
+    download_title(args.down)
 elif args.print:
     print_contents()
+elif args.dump:
+    dump_contents()
