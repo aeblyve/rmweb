@@ -117,6 +117,10 @@ def download_main(args):
     download_matches(request_filled_root_contents(), args.name[0])
 
 
+def dump_main(args):
+    download_dir_contents(request_filled_root_contents())
+
+
 def main():
     parser = argparse.ArgumentParser()
 
@@ -134,6 +138,9 @@ def main():
         "string", type=str, nargs=1, help="Regular expression to match"
     )
     download_parser.set_defaults(func=download_main)
+
+    dump_parser = subparsers.add_parser("dump")
+    dump_parser.set_defaults(func=dump_main)
 
     args = parser.parse_args()
     args.func(args)
