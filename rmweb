@@ -94,12 +94,10 @@ def print_contents(contents_json, indent_level=0):
 
 
 def download_matches(contents_json, name):
-    visited = {}
     for item in contents_json:
         if item["Type"] == "CollectionType":
-            if (not item["ID"] in visited) and name in item["VissibleName"]:
+            if name in item["VissibleName"]:
                 download_dir_contents(item["Contents"], item["VissibleName"], True)
-                visited[item["ID"]] = True
             else:
                 download_matches(item["Contents"], name)
         elif name in item["VissibleName"]:
