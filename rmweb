@@ -118,7 +118,7 @@ def download_main(args):
 
 
 def dump_main(args):
-    download_dir_contents(request_filled_root_contents())
+    download_dir_contents(request_filled_root_contents(), "remarkable_root", True)
 
 
 def main():
