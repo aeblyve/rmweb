@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import argparse, pycurl, json, sys, os, re
+import argparse, pycurl, json, sys, os
 from io import BytesIO
 
 REMARKABLE_IP_ADDRESS = "10.11.99.1"
@@ -16,7 +16,6 @@ def request_contents(dir_id):
     c.close()
     return json.loads(buffer.getvalue())
 
-
 def download_file_id(file_id, file_name):
     # {"error":"Not allowed to download collections"}
     c = pycurl.Curl()
@@ -29,10 +28,7 @@ def download_file_id(file_id, file_name):
     f.close()
 
 
-def download_dir_contents(contents_json, dir_name, recursive=False):
-    os.mkdir(dir_name)
-    current = os.getcwd()
-    os.chdir(dir_name)
+def download_dir_contents(contents_json, recursive=False):
     for item in contents_json:
         if item["Type"] == "CollectionType":
             if recursive:
@@ -98,22 +94,30 @@ def download_matches(contents_json, name):
         elif name in item["VissibleName"]:
             download_file_id(item["ID"], item["VissibleName"])
 
+def download_first(contents_json, name):
+    for item in contents_json:
+        if name in item["VissibleName"]:
+            download_file_id(item["ID"], item["VissibleName"])
+            return
+    not_found_error(name)
+
+def not_found_error(name):
+    print(f"Could not find {name}.")
 
 def upload_main(args):
     for file in args.files:
         upload_file(file)
-
 
 def print_main(args):
     print_contents(request_filled_root_contents())
 
 
 def download_main(args):
-    download_matches(request_filled_root_contents(), args.name[0])
+    download_first(request_filled_root_contents(), args.name[0])
 
 
 def dump_main(args):
-    download_dir_contents(request_filled_root_contents(), "remarkable_root", True)
+    download_dir_contents(request_filled_root_contents(), True)
 
 
 def main():
@@ -130,7 +134,7 @@ def main():
 
     download_parser = subparsers.add_parser("down")
     download_parser.add_argument(
-        "string", type=str, nargs=1, help="Regular expression to match"
+        "name", type=str, nargs=1, help="Name to match"
     )
     download_parser.set_defaults(func=download_main)
 
@@ -146,6 +150,6 @@ if __name__ == "__main__":
         print('''down {title} - downloads all matches of title
 up [file ...] - upload files
 print - view filesystem contents
-dump - download all files to remarkable_root/''')
+dump - download all files.''')
         sys.exit(0)
     main()
