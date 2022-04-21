@@ -142,4 +142,10 @@ def main():
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 1:
+        print('''down {title} - downloads all matches of title
+up [file ...] - upload files
+print - view filesystem contents
+dump - download all files to remarkable_root/''')
+        sys.exit(0)
     main()
