@@ -4,15 +4,10 @@
 
 # Install
 
-On Linux:
+`rmweb` depends on `pycurl`, so make sure that you have it installed.
+Then, mark `rmweb` as executable, and move it to a directory on your PATH.
 
-```bash
-sudo make install
-```
-
-On others, consult contents of Makefile and perform equivalent operations.
-
-# Basic Usage
+# Usage
 
 `rmweb down {search_title}`: Download all matches of search_title. Matched folders are downloaded in their entirety.
 
