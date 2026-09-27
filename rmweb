@@ -12,6 +12,7 @@ def request_contents(dir_id):
     c.setopt(c.URL, f"http://{REMARKABLE_IP_ADDRESS}/documents/{dir_id}")
     c.setopt(c.CONNECTTIMEOUT, 3)
     c.setopt(c.POST, 1)
+    c.setopt(c.POSTFIELDS, "")
     c.setopt(c.WRITEDATA, buffer)
     c.perform()
     c.close()
@@ -118,7 +119,7 @@ def print_main(args):
 
 
 def download_main(args):
-    download_first(request_filled_root_contents(), args.name[0])
+    download_matches(request_filled_root_contents(), args.name[0])
 
 
 def dump_main(args):
