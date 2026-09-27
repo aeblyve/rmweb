@@ -9,7 +9,7 @@ Then, mark `rmweb` as executable, and move it to a directory on your PATH.
 
 # Usage
 
-`rmweb down {search_title}`: Download the first match of `search_title`.
+`rmweb down {search_title}`: Download matches of `search_title`.
 
 `rmweb up [filename ... ]`: Upload the files at filename. \Limitation: The rm webserver currently only supports upload to the root directory.\*
 
